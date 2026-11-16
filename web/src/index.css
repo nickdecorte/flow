@@ -1,0 +1,205 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --spacing: 0.28rem;
+    --text-xs: 11px;
+    --text-sm: 13px;
+    --text-base: 15px;
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --color-status-waiting-for-analysis: var(--status-waiting-for-analysis);
+    --color-status-todo: var(--status-todo);
+    --color-status-in-analysis: var(--status-in-analysis);
+    --color-status-in-development: var(--status-in-development);
+    --color-status-in-review: var(--status-in-review);
+    --color-status-done: var(--status-done);
+    --color-task-done: var(--task-done);
+    --color-task-waiting: var(--task-waiting);
+    --color-task-blocked: var(--task-blocked);
+    --color-task-pending: var(--task-pending);
+    --color-task-dropped: var(--task-dropped);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground text-sm;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+/* The semantic colours of the eight statuses and the five task states, light and dark. */
+:root {
+    --status-waiting-for-analysis: oklch(0.886 0.010 252.8);
+    --status-todo: oklch(0.792 0.019 253.4);
+    --status-in-analysis: oklch(0.606 0.219 292.7);
+    --status-in-development: oklch(0.623 0.188 259.8);
+    --status-in-review: oklch(0.769 0.165 70.1);
+    --status-done: oklch(0.723 0.192 149.6);
+    --task-done: oklch(0.723 0.192 149.6);
+    --task-waiting: oklch(0.769 0.165 70.1);
+    --task-blocked: oklch(0.637 0.208 25.3);
+    --task-pending: oklch(0.886 0.010 252.8);
+    --task-dropped: oklch(0.844 0.008 260.7);
+}
+
+.dark {
+    --status-waiting-for-analysis: oklch(0.410 0.016 255.6);
+    --status-todo: oklch(0.506 0.019 251.0);
+    --status-in-analysis: oklch(0.709 0.159 293.5);
+    --status-in-development: oklch(0.714 0.143 254.6);
+    --status-in-review: oklch(0.837 0.164 84.4);
+    --status-done: oklch(0.800 0.182 151.7);
+    --task-done: oklch(0.800 0.182 151.7);
+    --task-waiting: oklch(0.837 0.164 84.4);
+    --task-blocked: oklch(0.711 0.166 22.2);
+    --task-pending: oklch(0.410 0.016 255.6);
+    --task-dropped: oklch(0.366 0.014 256.8);
+}
+
+/* The rendered markdown of a specification and a story description, as the old page styled it. */
+.specification-body h1 { font-size: 18px; margin: 18px 0 8px; font-weight: 600; }
+.specification-body h2 { font-size: 15px; margin: 22px 0 6px; padding-top: 10px; border-top: 1px solid var(--border); font-weight: 600; }
+.specification-body h3 { font-size: 13px; margin: 16px 0 6px; font-weight: 600; }
+.specification-body p, .specification-body li { line-height: 1.55; }
+.specification-body ul { list-style: disc; padding-left: 22px; }
+.specification-body ol { list-style: decimal; padding-left: 22px; }
+.specification-body code, .story-description code {
+    font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: var(--muted);
+    border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 4px;
+}
+.specification-body pre {
+    background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 10px 12px; overflow-x: auto;
+}
+.specification-body pre code { border: 0; padding: 0; background: none; }
+.specification-body table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 8px 0; }
+.specification-body th, .specification-body td { border: 1px solid var(--border); padding: 5px 8px; text-align: left; vertical-align: top; }
+.specification-body blockquote { margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--border); color: var(--muted-foreground); }
+.specification-body a, .story-description a { text-decoration: underline; }
+.specification-body strong, .story-description strong { font-weight: 600; }
+.specification-body em, .story-description em { font-style: italic; }
+.cb {
+    display: inline-block; width: 14px; height: 14px; border: 1px solid var(--muted-foreground);
+    border-radius: var(--radius-sm); margin-right: 6px; font-size: 11px; line-height: 13px;
+    text-align: center; vertical-align: -2px;
+}
+.cb-done {
+    background: var(--color-task-done); border-color: var(--color-task-done); color: var(--background);
+}
+.story-description { line-height: 1.55; }

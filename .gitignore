@@ -1,0 +1,6 @@
+__pycache__/
+.DS_Store
+web/node_modules/
+# Your own data: the space registry and this repo's own Flow backlog.
+spaces.json
+.flow/

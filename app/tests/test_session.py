@@ -1,5 +1,6 @@
 import json
 import unittest
+from datetime import date
 
 from support import Root
 from test_herdr import FakeHerdrApp
@@ -89,6 +90,69 @@ class StartStoryTest(unittest.TestCase):
         self.app.spaces[0]["tabs"] = [{"id": "tb1", "name": "E1S1 · Analyst", "terminals": [{"status": "working"}]}]
         with self.assertRaises(herdr.TabBusy):
             self.start("E1S1", "in-analysis", "in-development")
+
+
+class StartInSessionTest(unittest.TestCase):
+    """`flow.py start` behind the persona skills: the rendered persona, for the caller's own conversation."""
+
+    ANALYST = "---\nname: Analyst\nmodel:\n---\n\n## Role\nAnalyst\n\n## Start\nAnalyse {{specification_path}} (from {{from}})\n"
+    ENGINEER = ENGINEER + "\n## Continue\nContinue {{story_id}}\n"
+
+    def setUp(self) -> None:
+        self.root = Root()
+        self.addCleanup(self.root.cleanup)
+        self.folder = self.root.space([
+            {"id": "E1S1", "title": "Analysing"},
+            {"id": "E1S2", "title": "New story", "status": "waiting-for-analysis"},
+            {"id": "E1S3", "title": "Building"},
+        ])
+        self.root.specification("E1S1", "analysing.md", "Analysing (E1S1)", status="in-analysis")
+        self.root.specification("E1S3", "building.md", "Building (E1S3)", status="in-development")
+        self.root.persona("in-analysis", self.ANALYST)
+        self.root.persona("in-development", self.ENGINEER)
+
+    def start(self, story: str, target: str) -> dict:
+        return session.start_in_session(self.root.path, str(self.folder), story, target, date(2026, 11, 19))
+
+    def story(self, story: str) -> dict:
+        return sdlc.find_story(json.loads(self.root.config().read_text(encoding="utf-8")), story)[1]
+
+    def test_the_analyst_creates_a_missing_specification_and_starts_from_todo(self) -> None:
+        persona = self.start("E1S2", "in-analysis")
+
+        file = "2026-11-19-e1s2-new-story-specification.md"
+        self.assertEqual(persona["task"], f"Analyse {sdlc.specifications_dir(self.folder) / file} (from Todo)")
+        self.assertEqual((self.story("E1S2")["specification"], self.story("E1S2")["status"]), (file, "todo"))
+
+    def test_the_handover_follows_the_next_persona_skill_in_this_conversation(self) -> None:
+        role = self.start("E1S2", "in-analysis")["role"]
+
+        self.assertIn("\"Shall I continue with Engineer?\"", role)
+        self.assertIn(f"read `skill://flow-persona-engineer` and follow it for story E1S2 in `{self.folder}`", role)
+        self.assertNotIn(" next ", role)
+
+    def test_the_same_column_continues_and_a_new_step_clears_ready(self) -> None:
+        sdlc.set_story_ready(self.root.config(), "E1S3")
+
+        persona = self.start("E1S3", "in-development")
+
+        self.assertEqual(persona["task"], "Continue E1S3")
+        self.assertNotIn("ready", self.story("E1S3"))
+
+    def test_refusals_change_nothing(self) -> None:
+        sdlc.set_story_ready(self.root.config(), "E1S3")
+        before = self.root.config().read_bytes()
+        cases = [
+            ("backwards", ("E1S3", "in-analysis"), session.Refused, "In development → In analysis is not allowed"),
+            ("no specification", ("E1S2", "in-development"), sdlc.NotFound, "E1S2 has no specification"),
+            ("no persona", ("E1S3", "in-review"), session.Refused, "In review has no persona"),
+            ("unknown story", ("E1S9", "in-analysis"), sdlc.NotFound, "E1S9 does not exist"),
+        ]
+        for name, args, error, message in cases:
+            with self.subTest(name), self.assertRaisesRegex(error, message):
+                self.start(*args)
+        self.assertEqual(self.root.config().read_bytes(), before)
+
 
 
 class SpaceAtTest(unittest.TestCase):

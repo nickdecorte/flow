@@ -24,11 +24,22 @@ at most 30 minutes, starts the persona and writes every outcome to
 `<space-path>/.flow/sessions/<story-id>/next.log`. When it fails while the agent's tab is
 still open, it also tells that agent. Run from a shell, `next` starts the persona at once.
 
+    python3 app/flow.py start <persona> <space-path> [<story-id>]
+
+starts a persona in the conversation of the agent that runs it, the way the `flow-persona-*`
+omp skills do: `in-analysis`, `in-development` or `in-review` with a story, `product-owner`
+without. A story persona gets every check of a drop onto its column, with the story's current
+status as the source (the same column continues with the persona's Continue); `in-analysis`
+first creates the specification of a story without one. It clears the story's `ready` and
+prints the rendered persona: its Role (with a handover to the next persona's skill) and first
+message.
+
     python3 app/flow.py install
 
-copies the omp extensions Flow ships (`omp/extensions/*.ts`) into omp's user extensions
-folder, `~/.omp/agent/extensions` (or `$PI_CODING_AGENT_DIR/extensions`). omp sessions
-load them when they start.
+copies the omp extensions (`omp/extensions/*.ts`) and the persona skills
+(`omp/skills/<name>/SKILL.md`, with `{{flow}}` filled in) Flow ships into omp's user folders,
+`~/.omp/agent/extensions` and `~/.omp/agent/skills` (or under `$PI_CODING_AGENT_DIR`). omp
+sessions load them when they start.
 
     python3 app/flow.py breakdown < breakdown.json
 
@@ -50,7 +61,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Callable
 
@@ -63,7 +74,7 @@ import session  # noqa: E402
 Spawn = Callable[[list[str], Path], None]
 Wait = Callable[[str, float, herdr.Runner], str]
 NEXT_LOG = "next.log"
-EXTENSIONS = Path(__file__).resolve().parent.parent / "omp" / "extensions"
+OMP = Path(__file__).resolve().parent.parent / "omp"
 WAIT_SECONDS = 30 * 60
 # How long herdr-app may take to show the agent's turn as ended too.
 SETTLE_SECONDS = 60
@@ -104,22 +115,41 @@ def ready(path: str, story_id: str) -> str:
     return f"{story_id}: ready"
 
 
-def omp_extensions_dir() -> Path:
-    """omp's user extensions folder: its agent folder (`PI_CODING_AGENT_DIR`, else `~/.omp/agent`) + `extensions`."""
-    return Path(os.environ.get("PI_CODING_AGENT_DIR") or "~/.omp/agent").expanduser() / "extensions"
+def start(root: Path, key: str, path: str, story_id: str | None, today: date) -> str:
+    """Start the persona `key` in the caller's conversation; its rendered Role and first message, for stdout."""
+    if key == sdlc.PRODUCT_OWNER:
+        if story_id:
+            raise session.Refused("The Product Owner belongs to no story; leave out the story ID")
+        persona = session.product_owner_persona(root, sdlc.space_at(sdlc.load_state(root), path))
+    elif not story_id:
+        raise session.Refused(f"{sdlc.PERSONA_LABELS[key]} needs a story ID")
+    else:
+        persona = session.start_in_session(root, path, story_id, key, today)
+    return f"# {persona['name']}\n\n## Role\n{persona['role']}\n\n## First message\n{persona['task']}"
 
 
-def install(target: Path, source: Path = EXTENSIONS) -> str:
-    """Copy every extension in `source` into `target`; one line per file, for stdout."""
-    target.mkdir(parents=True, exist_ok=True)
+def omp_agent_dir() -> Path:
+    """omp's user agent folder: `PI_CODING_AGENT_DIR`, else `~/.omp/agent`."""
+    return Path(os.environ.get("PI_CODING_AGENT_DIR") or "~/.omp/agent").expanduser()
+
+
+def install(agent_dir: Path, source: Path = OMP) -> str:
+    """Copy every extension and skill in `source` into `agent_dir`; one line per file, for stdout.
+
+    A skill's `{{flow}}` becomes the command that runs this checkout's `flow.py`.
+    """
+    files = [(agent_dir / "extensions" / file.name, file.read_bytes()) for file in sorted((source / "extensions").glob("*.ts"))]
+    files += [
+        (agent_dir / "skills" / file.parent.name / file.name, file.read_text(encoding="utf-8").replace("{{flow}}", sdlc.FLOW_COMMAND).encode())
+        for file in sorted((source / "skills").glob("*/SKILL.md"))
+    ]
     lines = []
-    for file in sorted(source.glob("*.ts")):
-        destination = target / file.name
-        content = file.read_bytes()
+    for destination, content in files:
         if destination.is_file() and destination.read_bytes() == content:
             lines.append(f"unchanged: {destination}")
             continue
         state = "updated" if destination.exists() else "installed"
+        destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(content)
         lines.append(f"{state}: {destination}")
     if any(not line.startswith("unchanged") for line in lines):
@@ -222,7 +252,11 @@ def main(argv: list[str] | None = None) -> int:
     command = commands.add_parser("next", help="hand a ready story over to the persona of the next column")
     command.add_argument("path", help="path of the space (the folder with .flow/)")
     command.add_argument("story", help="story ID, e.g. E5S4")
-    commands.add_parser("install", help="install Flow's omp extensions into ~/.omp/agent/extensions")
+    command = commands.add_parser("start", help="start a persona in this agent's conversation; prints its role and first message")
+    command.add_argument("persona", choices=sdlc.PERSONAS)
+    command.add_argument("path", help="path of the space (the folder with .flow/); the Product Owner's home space")
+    command.add_argument("story", nargs="?", help="story ID, e.g. E5S4; not for product-owner")
+    commands.add_parser("install", help="install Flow's omp extensions and persona skills into ~/.omp/agent")
     commands.add_parser("breakdown", help="add an approved breakdown (JSON on stdin) as epics and stories")
     command = commands.add_parser("_handover", help="internal: the worker `next` spawns")
     for name in ("path", "story", "terminal", "source", "target"):
@@ -235,8 +269,10 @@ def main(argv: list[str] | None = None) -> int:
             print(status(args.path, args.story, args.status))
         elif args.command == "ready":
             print(ready(args.path, args.story))
+        elif args.command == "start":
+            print(start(sdlc.ROOT, args.persona, args.path, args.story, date.today()))
         elif args.command == "install":
-            print(install(omp_extensions_dir()))
+            print(install(omp_agent_dir()))
         elif args.command == "breakdown":
             print(breakdown(sdlc.ROOT, sys.stdin.read()))
         else:

@@ -356,9 +356,13 @@ class InstallTest(unittest.TestCase):
     def setUp(self) -> None:
         self.dir = tempfile.TemporaryDirectory()
         self.source = Path(self.dir.name) / "source"
-        self.source.mkdir()
-        (self.source / "a.ts").write_text("// a\n")
-        self.target = Path(self.dir.name) / "agent" / "extensions"
+        (self.source / "extensions").mkdir(parents=True)
+        (self.source / "extensions" / "a.ts").write_text("// a\n")
+        (self.source / "skills" / "flow-persona-x").mkdir(parents=True)
+        (self.source / "skills" / "flow-persona-x" / "SKILL.md").write_text("Run `{{flow}} start`\n")
+        self.agent = Path(self.dir.name) / "agent"
+        self.target = self.agent / "extensions"
+        self.skill = self.agent / "skills" / "flow-persona-x" / "SKILL.md"
 
     def tearDown(self) -> None:
         self.dir.cleanup()
@@ -366,21 +370,26 @@ class InstallTest(unittest.TestCase):
     def test_copies_new_extensions_and_leaves_others(self) -> None:
         self.target.mkdir(parents=True)
         (self.target / "other.ts").write_text("// someone else's\n")
-        output = flow.install(self.target, self.source)
+        output = flow.install(self.agent, self.source)
         self.assertEqual((self.target / "a.ts").read_text(), "// a\n")
         self.assertEqual((self.target / "other.ts").read_text(), "// someone else's\n")
         self.assertIn(f"installed: {self.target / 'a.ts'}", output)
 
+    def test_installs_skills_with_the_flow_command_of_this_checkout(self) -> None:
+        output = flow.install(self.agent, self.source)
+        self.assertEqual(self.skill.read_text(), f"Run `{sdlc.FLOW_COMMAND} start`\n")
+        self.assertIn(f"installed: {self.skill}", output)
+
     def test_a_second_run_changes_nothing_and_a_changed_copy_is_updated(self) -> None:
-        flow.install(self.target, self.source)
-        self.assertEqual(flow.install(self.target, self.source), f"unchanged: {self.target / 'a.ts'}")
+        flow.install(self.agent, self.source)
+        self.assertEqual(flow.install(self.agent, self.source), f"unchanged: {self.target / 'a.ts'}\nunchanged: {self.skill}")
         (self.target / "a.ts").write_text("// edited\n")
-        self.assertIn("updated:", flow.install(self.target, self.source))
+        self.assertIn("updated:", flow.install(self.agent, self.source))
         self.assertEqual((self.target / "a.ts").read_text(), "// a\n")
 
     def test_the_folder_follows_pi_coding_agent_dir(self) -> None:
         with mock.patch.dict("os.environ", {"PI_CODING_AGENT_DIR": "/x/agent"}):
-            self.assertEqual(flow.omp_extensions_dir(), Path("/x/agent/extensions"))
+            self.assertEqual(flow.omp_agent_dir(), Path("/x/agent"))
 
 
 if __name__ == "__main__":

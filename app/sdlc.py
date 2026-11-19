@@ -320,6 +320,8 @@ PERSONA_COLUMNS = [column["key"] for column in COLUMNS if column["persona"]]
 PRODUCT_OWNER = "product-owner"
 PERSONAS = [*PERSONA_COLUMNS, PRODUCT_OWNER]
 PERSONA_LABELS = {**{key: COLUMN_LABELS[key] for key in PERSONA_COLUMNS}, PRODUCT_OWNER: "Product Owner"}
+# The omp skills `flow.py install` installs from `omp/skills/`, per persona that has one.
+PERSONA_SKILLS = {"in-analysis": "flow-persona-analyst", "in-development": "flow-persona-engineer", PRODUCT_OWNER: "flow-persona-product-owner"}
 STORY_VARIABLES = ["specification_path", "specification_title", "story_id", "path", "execution", "from", "config_file", "flow"]
 PERSONA_VARIABLES = {**{key: STORY_VARIABLES for key in PERSONA_COLUMNS}, PRODUCT_OWNER: ["path", "config_file", "spaces_file", "flow"]}
 PERSONA_SECTIONS = {"role": "role", "start": "start", "continue": "continue"}

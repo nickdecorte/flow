@@ -46,7 +46,7 @@ The agents move the cards themselves with `flow.py status` and mark a finished s
 
 **1. Clone the repo** wherever you like. The commands below assume `~/flow`. The personas call Flow's CLI through `{{flow}}`, so they work from any location.
 
-**2. Install the omp extension** that marks a tab as blocked while an agent waits for your answer:
+**2. Install the omp extension and the persona skills:** the extension marks a tab as blocked while an agent waits for your answer; the skills start a persona in any omp conversation (see [Skills](#skills-personas-without-the-board)):
 
 ```sh
 python3 ~/flow/app/flow.py install
@@ -74,7 +74,7 @@ hc kill sdlc-dashboard && hc rm sdlc-dashboard   # stop
 ```
 
 - **Another port:** add `--port 8770` after `server.py`.
-- **After an update of the repo:** stop and start the server again, and run `flow.py install` again if `omp/extensions/` changed.
+- **After an update of the repo:** stop and start the server again, and run `flow.py install` again if `omp/` changed.
 - **Changes to `spaces.json` or `.flow/`** made outside Flow (by an agent, a shell or another page) show within a second; changes to `personas/` after reloading the page.
 - At startup the server logs inconsistent data as `warning:` (see [Statuses](#statuses)).
 
@@ -187,9 +187,26 @@ The Product Owner has no Continue section and its own variables:
 | `{{spaces_file}}` | full path of `spaces.json`, the spaces it may write to |
 | `{{flow}}` | the command that runs Flow's CLI, `python3 <checkout>/app/flow.py` |
 
-**Handover.** Flow adds a fixed paragraph to the Role of the Analyst and the Engineer. When their step is done (`flow.py ready`) and the next column has a persona, they ask "Shall I continue with \<Persona\>?" and on yes run `flow.py next`. In review gets nothing: its next step is Done, which is yours.
+**Handover.** Flow adds a fixed paragraph to the Role of the Analyst and the Engineer. When their step is done (`flow.py ready`) and the next column has a persona, they ask "Shall I continue with \<Persona\>?" and on yes run `flow.py next`, or, when started through a [skill](#skills-personas-without-the-board), follow the next persona's skill in the same conversation. In review gets nothing: its next step is Done, which is yours.
 
 The dashboard saves a persona only with a name, role and start, and refuses unknown variables (including another persona's) and a Continue for the Product Owner. A persona file with extra sections can only be edited in your editor, so nothing gets lost.
+
+### Skills: personas without the board
+
+`flow.py install` installs one omp skill per persona into `~/.omp/agent/skills`, so any omp conversation can take on a persona without the dashboard or Herdr:
+
+| Skill | Persona | Example |
+|---|---|---|
+| `flow-persona-analyst` | Analyst | `/skill:flow-persona-analyst E5S4` |
+| `flow-persona-engineer` | Engineer | `/skill:flow-persona-engineer E5S4` |
+| `flow-persona-product-owner` | Product Owner | `/skill:flow-persona-product-owner` |
+
+- The space is the path you give, else the nearest folder from the working directory up with `.flow/config.json`. It must be registered in `spaces.json`.
+- A skill runs `flow.py start`, which reads the persona file at that moment: edits on the Personas page apply without reinstalling.
+- The same checks as a drag, with the story's current status as where it comes from. The Analyst creates the specification of a story that has none, so a story fresh from the Product Owner can be analysed straight away.
+- The persona runs in the current conversation, not in `.flow/sessions/<story>`, and its model is the conversation's. The Board shows the status and the green dot, but no yellow or red dot: those come from Herdr tabs.
+- Handover stays in the conversation: after "Shall I continue with Engineer?" and your yes, the Analyst reads `flow-persona-engineer` and the Engineer takes over.
+- The skills are `omp/skills/<name>/SKILL.md`; `flow.py install` fills in `{{flow}}`. A persona without a skill (In review) is only started from the Board.
 
 ### Questions from the Analyst
 
@@ -215,10 +232,11 @@ The personas use `flow.py`; you can run it yourself too. Errors go to stderr wit
 | `flow.py status <space-path> <story-id> <status>` | Sets a story's status in `config.json`, with the same rules as the dashboard. Clears `ready`. |
 | `flow.py ready <space-path> <story-id>` | Marks the step of a story in In analysis, In development or In review as done: `"ready": true`, a green dot. A status change or a newly started agent clears it; selecting an already open tab does not. |
 | `flow.py next <space-path> <story-id>` | Hands a ready story to the persona of the next column (In analysis → In development, In development → In review), exactly like a drag. From an agent's tab it waits until that agent's turn has ended (outcome in `.flow/sessions/<story>/next.log`). From a shell it starts at once. |
-| `flow.py install` | Copies `omp/extensions/*.ts` into `~/.omp/agent/extensions` (or `$PI_CODING_AGENT_DIR/extensions`). Prints `installed`, `updated` or `unchanged` per file; other extensions stay. Run it again after the extensions change. |
+| `flow.py start <persona> <space-path> [<story-id>]` | Starts a persona in the calling agent's own conversation, as the [skills](#skills-personas-without-the-board) do: `in-analysis`, `in-development` or `in-review` with a story, `product-owner` without. Runs the checks of a drag, creates a missing specification for `in-analysis`, clears `ready`, and prints the rendered Role and first message. |
+| `flow.py install` | Copies `omp/extensions/*.ts` into `~/.omp/agent/extensions` and `omp/skills/*/SKILL.md` into `~/.omp/agent/skills` (or under `$PI_CODING_AGENT_DIR`). Prints `installed`, `updated` or `unchanged` per file; other extensions and skills stay. Run it again after `omp/` changes. |
 | `flow.py breakdown` | Adds an approved breakdown, read as JSON from stdin, as epics and stories to any registered spaces. See below. |
 
-All five live at `python3 <checkout>/app/flow.py`; a persona writes `{{flow}}`.
+All six live at `python3 <checkout>/app/flow.py`; a persona writes `{{flow}}`.
 
 ### `flow.py breakdown`
 
